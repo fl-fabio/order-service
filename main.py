@@ -2,20 +2,25 @@
 from fastapi import FastAPI, HTTPException
 from domain import Order, OrderItem
 from repository import order_repo
+from mangum import Mangum
 
 app = FastAPI()
+
+def serialize_order(order: Order):
+    return {
+        "id": order.id,
+        "status": order.status,
+        "items": [item.dict() for item in order.items],
+    }
 
 # Creare an Order (Draft)
 @app.post("/orders", status_code=201)
 def create_order():
-    # crea un ordine vuoto
-    new_order = Order()
-    # inserisce l'ordine a db
-    order_repo.save(new_order)
-    # do conferma all'utente 
+    order = Order()
+    order_repo.save(order)
     return {
         "message": "Order created",
-        "id": new_order.id
+        "order": serialize_order(order)
     }
 
 # Inserire un order_item in un Order
@@ -26,14 +31,11 @@ def add_item(order_id: str, item: OrderItem):
     order = order_repo.get_by_id(order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     try:
         order.add_product(item)
         order_repo.save(order)
-        return {
-            "message": "Item added",
-            "total": len(order.items)
-        }
+        return serialize_order(order)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     
@@ -41,13 +43,13 @@ def add_item(order_id: str, item: OrderItem):
 def confirm_order(order_id: str):
     order = order_repo.get_by_id(order_id)
     if not order:
-            raise HTTPException(status_code=404, detail="Order not found")
-    
+        raise HTTPException(status_code=404, detail="Order not found")
+
     try:
         order.confirm()
-        order_repo.save(order)
+        return serialize_order(order)
     except ValueError as e:
-         raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e))
 
 @app.post("/orders/{order_id}/cancel")
 def cancel_order(order_id: str):
@@ -77,20 +79,16 @@ def ship_order(order_id: str):
 def get_order(order_id: str):
     order = order_repo.get_by_id(order_id)
     if not order:
-         raise HTTPException(status_code=404, detail="Order not found")
-    return {
-         "message": "Order found",
-         "order": order
-    }
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    return serialize_order(order)
 
 @app.get("/orders")
 def get_orders():
     orders = order_repo.get_all()
     return {
         "count": len(orders),
-        "orders": orders
+        "orders": [serialize_order(o) for o in orders]
     }
 
-#"/orders/{order_id}/confirm" 
-#"/orders/{order_id}/cancel"
-#"/orders/{order_id}/ship"
+handler = Mangum(app)

@@ -6,13 +6,13 @@ class OrderRepository:
         self.storage: Dict[str, Order] = {}
 
     def save(self, order: Order):
-        self.storage[order.id] = Order
+        self.storage[order.id] = order
 
     def get_by_id(self, order_id) -> Optional[Order]:
         return self.storage.get(order_id)
     
     def get_all(self):
-        return list(self.storage)
+        return list(self.storage.values())
 
 
 order_repo = OrderRepository()

@@ -4,10 +4,10 @@ import uuid
 from typing import List
 
 class OrderStatus(str, Enum):
-    DRAFT: "Draft"
-    CONFIRMED: "Confirmed"
-    SHIPPED: "Shipped"
-    CANCELED: "Canceled"
+    DRAFT = "Draft"
+    CONFIRMED = "Confirmed"
+    SHIPPED = "Shipped"
+    CANCELED = "Canceled"
 
 class OrderItem(BaseModel):
     product_id: str
@@ -17,7 +17,7 @@ class OrderItem(BaseModel):
 class Order:
     def __init__(self):
         self.id = str(uuid.uuid4())[:8]
-        self.items = List[OrderItem] = {}
+        self.items: List[OrderItem] = []
         self.status = OrderStatus.DRAFT
 
     def add_product(self, item: OrderItem):
